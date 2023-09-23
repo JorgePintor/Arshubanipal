@@ -64,7 +64,7 @@ class WebRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             response = f"""
             {book_page.decode()}
-        <p>  NUM SESION: {session_id}      </p>
+        <p>  Numero de sesión: {session_id}      </p>
         <p>  Recomendación: {book_recomendation}      </p>
 """
             self.wfile.write(response.encode("utf-8"))
