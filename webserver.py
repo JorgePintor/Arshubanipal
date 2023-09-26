@@ -2,6 +2,7 @@ from functools import cached_property
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qsl, urlparse
+from bs4 import BeautifulSoup
 import re
 import redis
 import uuid 
@@ -16,7 +17,11 @@ class WebRequestHandler(BaseHTTPRequestHandler):
     @cached_property
     def cookies(self):
         return SimpleCookie(self.headers.get("Cookie"))
-
+    
+    @cached_property
+    def query_data(self):
+        return dict(parse_qsl(self.url.query))
+    
     def set_book_cookie(self, session_id, max_age=10):
         c = SimpleCookie()
         c["session"] = session_id
@@ -46,12 +51,17 @@ class WebRequestHandler(BaseHTTPRequestHandler):
     def get_book_recomendation(self, session_id, book_id):
         r.rpush(session_id, book_id)
         books = r.lrange(session_id, 0, 5)
+        books_visited = [vb.decode() for vb in books]
+        num_books_required = 3
         print(session_id, books)
-        all_books = [str(i+1) for i in range(4)]
-        new = [b for b in all_books if b not in
+        if len(books_visited) >= num_books_required:
+            all_books = [str(i+1) for i in range(4)]
+            new = [b for b in all_books if b not in
                [vb.decode() for vb in books]]
-        if new:
-            return new[0]
+            if new:
+                return new[0]
+        else:
+            return None
 
     def get_book(self, book_id):
         session_id = self.get_book_session()
@@ -77,9 +87,10 @@ class WebRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/html")
         self.set_book_cookie(session_id)
         self.end_headers()
-        with open('html/index.html') as f:
-            response = f.read()
-        self.wfile.write(response.encode("utf-8"))
+        self.wfile.write(self.get_response().encode("utf-8"))
+        #with open('html/index.html') as f:
+            #response = f.read()
+        #self.wfile.write(response.encode("utf-8"))
 
     def get_method(self, path):
         for pattern, method in mapping:
@@ -87,6 +98,18 @@ class WebRequestHandler(BaseHTTPRequestHandler):
             if match:
                 return (method, match.groupdict())
 
+    def get_response(self):
+        return f"""
+        <h1>Buscador de libros</h1>
+        <form action="/" method="get">
+            <label for="q"> Busqueda </label> 
+            <input type="text" name="q" required/> 
+        </form>
+
+        <p> {self.query_data} </p>
+
+        <a href="/workspaces/Arshubanipal/html/index.html">Indice </a>
+"""
 
 mapping = [
             (r'^/books/(?P<book_id>\d+)$', 'get_book'),
