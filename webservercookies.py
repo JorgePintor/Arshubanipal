@@ -46,12 +46,18 @@ class WebRequestHandler(BaseHTTPRequestHandler):
     def get_book_recomendation(self, session_id, book_id):
         r.rpush(session_id, book_id)
         books = r.lrange(session_id, 0, 5)
+        books_visited = [vb.decode() for vb in books]
+        num_books_required = 3
         print(session_id, books)
-        all_books = [str(i+1) for i in range(4)]
-        new = [b for b in all_books if b not in
+        if len(books_visited) >= num_books_required:
+            all_books = [str(i+1) for i in range(4)]
+            new = [b for b in all_books if b not in
                [vb.decode() for vb in books]]
-        if new:
-            return new[0]
+            if new:
+                return new[0]
+        else:
+            return None
+
 
     def get_book(self, book_id):
         session_id = self.get_book_session()
@@ -64,9 +70,6 @@ class WebRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             response = f"""
             {book_page.decode()}
-        <p>  Ruta: {self.path}            </p>
-        <p>  URL: {self.url}              </p>
-        <p>  HEADERS: {self.headers}      </p>
         <p>  SESSION: {session_id}      </p>
         <p>  Recomendación: {book_recomendation}      </p>
 """

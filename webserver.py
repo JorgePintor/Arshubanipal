@@ -39,6 +39,14 @@ class WebRequestHandler(BaseHTTPRequestHandler):
         return c.get("session").value
 
     def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        books = None
+        if self.query_data and 'q' in self.query_data:
+            books = r.sunion(self.query_data['q'].split(' '))
+        self.wfile.write(self.get_response(books).encode("utf-8"))
+        
         method = self.get_method(self.url.path)
         if method:
             method_name, dict_params = method
@@ -71,7 +79,6 @@ class WebRequestHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
             self.set_book_cookie(session_id)
-            self.end_headers()
             response = f"""
             {book_page.decode()}
         <p>  Numero de sesión: {session_id}      </p>
@@ -86,11 +93,9 @@ class WebRequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.set_book_cookie(session_id)
-        self.end_headers()
-        self.wfile.write(self.get_response().encode("utf-8"))
-        #with open('html/index.html') as f:
-            #response = f.read()
-        #self.wfile.write(response.encode("utf-8"))
+        with open('html/index.html') as f:
+            response = f.read()
+        self.wfile.write(response.encode("utf-8"))
 
     def get_method(self, path):
         for pattern, method in mapping:
@@ -98,17 +103,15 @@ class WebRequestHandler(BaseHTTPRequestHandler):
             if match:
                 return (method, match.groupdict())
 
-    def get_response(self):
+    def get_response(self,books):
         return f"""
         <h1>Buscador de libros</h1>
         <form action="/" method="get">
-            <label for="q"> Busqueda </label> 
+            <label for="q"> Busqueda  </label> 
             <input type="text" name="q" required/> 
         </form>
-
         <p> {self.query_data} </p>
-
-        <a href="/workspaces/Arshubanipal/html/index.html">Indice </a>
+        <p> {books}</p>
 """
 
 mapping = [

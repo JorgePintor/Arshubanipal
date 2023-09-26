@@ -21,15 +21,11 @@ def load_folder(path):
                 create_index(book_id,html)
             print(match.group(0), book_id)
 
-def create_index(book_id,html):
-    soup=BeautifulSoup(html,'html.parser')
-    texto=soup.get_text()
-    lista_texto=texto.split(' ')
-    for t in lista_texto:
-        key_type = r.type(t)
-        if key_type=='set':
-            r.sadd(t, book_id)
-        else: 
-            return None
+def create_index(book_id, html):
+    soup = BeautifulSoup(html, 'html.parser')
+    texto = soup.get_text()
+    lista_texto = texto.split(' ')
+    for lk in lista_texto:
+        r.sadd(lk, book_id)
 
 load_folder('html/books/')
